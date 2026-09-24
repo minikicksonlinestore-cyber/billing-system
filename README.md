@@ -1,36 +1,58 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Billing & Inventory Management System
 
-## Getting Started
+A production-grade, full-stack GST Billing & Inventory Management System built with **Next.js 16 (Turbopack)**, **TypeScript**, **Tailwind CSS v4**, and **Supabase PostgreSQL & Auth**.
 
-First, run the development server:
+---
 
-```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+## 🚀 Key Features
+
+- **Dashboard**: Real-time business metrics (Total Sales, Total Paid, Total Balance, Invoices, Low-Stock Alerts).
+- **Product & Category Management**: Full CRUD operations with SKU, HSN/SAC codes, Purchase & Selling prices, GST rates, and stock thresholds.
+- **Inventory Management**: Real-time stock tracking, manual adjustments (additions/reductions), movement audit logs, and low-stock warnings.
+- **POS / New Bill Screen**: Product search, customer inline creation, line item discounts, auto-calculated GST & subtotal, and pre-confirmation bill preview.
+- **Payment Processing**: Staff manual paid amount entry, automatic balance calculation (`Total - Paid`), and status handling (`PAID`, `PARTIALLY PAID`, `DUE`).
+- **Atomic Invoice Confirmation**: Stored procedure transactions (`confirm_invoice_transaction`) ensuring stock is deducted **only** upon invoice confirmation.
+- **Invoice History & A4 Printable Layout**: Printable GST Tax Invoice template formatted to standard A4 dimensions (210mm x 297mm) with reprinting support.
+- **Customer & Due Management**: Track customer purchase history and manage outstanding invoice balances with payment history logs.
+- **Reports & Analytics**: Daily, Weekly, Monthly, Yearly sales totals, Product sales reports, Customer analytics, Stock reports, and Date Range filters.
+- **Shop Settings**: Dynamic store configuration (Name, Address, Phone, Email, GSTIN, Logo, Terms & Conditions) automatically integrated into printable invoices.
+
+---
+
+## 🛠️ Environment Configuration
+
+Create a `.env.local` file in the root directory:
+
+```env
+# Supabase Configuration
+NEXT_PUBLIC_SUPABASE_URL=https://your-project-ref.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=your-supabase-anon-key
+
+# App Configuration
+NEXT_PUBLIC_APP_NAME="Billing & Inventory Manager"
+NEXT_PUBLIC_APP_URL=http://localhost:3000
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+---
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+## 💻 Getting Started
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+First, install dependencies and run the development server:
 
-## Learn More
+```bash
+npm install
+npm run dev
+```
 
-To learn more about Next.js, take a look at the following resources:
+Open [http://localhost:3000](http://localhost:3000) with your browser.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+---
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## 📦 Database & Migrations
 
-## Deploy on Vercel
-
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
-
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Database schema and RPC procedures are located in the `supabase/migrations/` directory:
+- `001_initial_schema.sql`
+- `002_add_hsn_sac.sql`
+- `003_adjust_stock_rpc.sql`
+- `004_add_payment_status.sql`
+- `005_confirm_invoice_rpc.sql`
