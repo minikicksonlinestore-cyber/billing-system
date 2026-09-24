@@ -1,13 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { Eye, EyeOff, Loader2, AlertCircle, Lock } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
-  const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
@@ -19,50 +16,41 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const supabase = createClient();
-      const { error: authError } = await supabase.auth.signInWithPassword({
-        email: email.trim(),
-        password,
+      const res = await fetch("/api/auth/login", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ password }),
       });
 
-      if (authError) {
-        if (
-          authError.message.includes("Failed to fetch") ||
-          authError.message.includes("fetch") ||
-          authError.message.includes("placeholder")
-        ) {
-          setError(
-            "Authentication failed: Unable to connect to Supabase. Ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables are configured in your deployment settings."
-          );
-        } else {
-          setError(authError.message);
-        }
+      const data = await res.json();
+
+      if (!res.ok || !data.success) {
+        setError(data.error || "Incorrect password. Please try again.");
         setIsLoading(false);
         return;
       }
 
-      // Perform a full window navigation so browser attaches all newly set auth cookies to the HTTP GET request for /dashboard
+      // Force full window navigation to attach session cookie to GET /dashboard
       window.location.href = "/dashboard";
-    } catch (err: any) {
-      if (err?.message?.includes("Failed to fetch") || err?.toString()?.includes("fetch")) {
-        setError(
-          "Authentication failed: Unable to connect to Supabase. Ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables are configured in your deployment settings."
-        );
-      } else {
-        setError("An unexpected error occurred during login. Please try again.");
-      }
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
       setIsLoading(false);
     }
   };
 
   return (
     <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-8">
-      <div className="mb-6">
+      <div className="mb-6 text-center sm:text-left">
+        <div className="w-10 h-10 rounded-xl bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 flex items-center justify-center mb-3 mx-auto sm:mx-0">
+          <Lock className="w-5 h-5" />
+        </div>
         <h2 className="text-xl font-semibold text-gray-900 dark:text-white">
-          Welcome back
+          Billing System Access
         </h2>
         <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-          Sign in to your account to continue
+          Enter your system access password to unlock the dashboard
         </p>
       </div>
 
@@ -75,55 +63,26 @@ export default function LoginPage() {
           </div>
         )}
 
-        {/* Email */}
+        {/* Password Only */}
         <div className="space-y-1.5">
           <label
-            htmlFor="email"
+            htmlFor="password"
             className="block text-sm font-medium text-gray-700 dark:text-gray-300"
           >
-            Email address
+            System Password
           </label>
-          <input
-            id="email"
-            type="email"
-            autoComplete="email"
-            required
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="you@example.com"
-            className={cn(
-              "w-full px-3 py-2.5 rounded-lg border text-sm transition-colors",
-              "bg-white dark:bg-gray-900 text-gray-900 dark:text-white",
-              "border-gray-300 dark:border-gray-600",
-              "placeholder:text-gray-400 dark:placeholder:text-gray-500",
-              "focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500",
-              "disabled:opacity-50 disabled:cursor-not-allowed"
-            )}
-            disabled={isLoading}
-          />
-        </div>
-
-        {/* Password */}
-        <div className="space-y-1.5">
-          <div className="flex items-center justify-between">
-            <label
-              htmlFor="password"
-              className="block text-sm font-medium text-gray-700 dark:text-gray-300"
-            >
-              Password
-            </label>
-          </div>
           <div className="relative">
             <input
               id="password"
               type={showPassword ? "text" : "password"}
               autoComplete="current-password"
               required
+              autoFocus
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              placeholder="••••••••"
+              placeholder="Enter system password"
               className={cn(
-                "w-full px-3 py-2.5 pr-10 rounded-lg border text-sm transition-colors",
+                "w-full px-3.5 py-2.5 pr-10 rounded-lg border text-sm transition-colors",
                 "bg-white dark:bg-gray-900 text-gray-900 dark:text-white",
                 "border-gray-300 dark:border-gray-600",
                 "placeholder:text-gray-400 dark:placeholder:text-gray-500",
@@ -150,29 +109,18 @@ export default function LoginPage() {
         {/* Submit Button */}
         <button
           type="submit"
-          disabled={isLoading || !email || !password}
+          disabled={isLoading || !password}
           className={cn(
-            "w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors",
+            "w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-lg text-sm font-medium transition-colors mt-2",
             "bg-indigo-600 text-white hover:bg-indigo-700",
             "focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2",
             "disabled:opacity-50 disabled:cursor-not-allowed"
           )}
         >
           {isLoading && <Loader2 className="w-4 h-4 animate-spin" />}
-          {isLoading ? "Signing in..." : "Sign in"}
+          {isLoading ? "Unlocking Dashboard..." : "Unlock Dashboard"}
         </button>
       </form>
-
-      {/* Sign up link */}
-      <p className="mt-6 text-center text-sm text-gray-500 dark:text-gray-400">
-        Don&apos;t have an account?{" "}
-        <Link
-          href="/signup"
-          className="text-indigo-600 dark:text-indigo-400 font-medium hover:underline"
-        >
-          Create one
-        </Link>
-      </p>
     </div>
   );
 }

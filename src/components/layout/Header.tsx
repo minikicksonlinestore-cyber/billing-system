@@ -54,10 +54,12 @@ export function Header({ onMobileMenuToggle, title = "Dashboard" }: HeaderProps)
 
   const handleLogout = async () => {
     setIsLoggingOut(true);
-    const supabase = createClient();
-    await supabase.auth.signOut();
-    router.push("/login");
-    router.refresh();
+    try {
+      await fetch("/api/auth/logout", { method: "POST" });
+    } catch {
+      // Ignore errors on logout
+    }
+    window.location.href = "/login";
   };
 
   const initials = user?.full_name
