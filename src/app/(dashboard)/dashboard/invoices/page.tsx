@@ -18,6 +18,7 @@ import {
 import Link from "next/link";
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 import { A4InvoicePrint } from "@/components/invoices/A4InvoicePrint";
+import { DatabaseStatusBanner } from "@/components/layout/DatabaseStatusBanner";
 
 type InvoiceWithDetails = Invoice & {
   customer?: Customer;
@@ -48,25 +49,30 @@ export default function InvoicesPage() {
     setIsLoading(true);
     setError(null);
 
-    // Fetch invoices and customers
-    const [{ data: invs, error: invErr }, { data: custs }] = await Promise.all([
-      supabase.from("invoices").select("*, customer:customers(*)").order("created_at", { ascending: false }),
-      supabase.from("customers").select("*").order("name"),
-    ]);
+    try {
+      // Fetch invoices and customers
+      const [{ data: invs, error: invErr }, { data: custs }] = await Promise.all([
+        supabase.from("invoices").select("*, customer:customers(*)").order("created_at", { ascending: false }),
+        supabase.from("customers").select("*").order("name"),
+      ]);
 
-    if (invErr) {
-      setError(invErr.message);
-    } else {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const mapped = (invs as any[])?.map((inv) => ({
-        ...inv,
-        customer: Array.isArray(inv.customer) ? inv.customer[0] : inv.customer,
-      })) || [];
-      setInvoices(mapped);
+      if (invErr) {
+        setError(invErr.message);
+      } else {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const mapped = (invs as any[])?.map((inv) => ({
+          ...inv,
+          customer: Array.isArray(inv.customer) ? inv.customer[0] : inv.customer,
+        })) || [];
+        setInvoices(mapped);
+      }
+
+      if (custs) setCustomers(custs);
+    } catch (err: any) {
+      setError(err?.message || "Failed to fetch database records");
+    } finally {
+      setIsLoading(false);
     }
-
-    if (custs) setCustomers(custs);
-    setIsLoading(false);
   };
 
   useEffect(() => {
@@ -156,12 +162,7 @@ export default function InvoicesPage() {
         </Link>
       </div>
 
-      {error && (
-        <div className="p-4 bg-red-50 text-red-700 border border-red-200 rounded-lg flex items-center gap-2">
-          <AlertCircle className="w-5 h-5 flex-shrink-0" />
-          {error}
-        </div>
-      )}
+      <DatabaseStatusBanner error={error} />
 
       {/* Stage 8 Filter Controls Bar */}
       <div className="bg-white dark:bg-gray-800 p-4 rounded-xl border border-gray-200 dark:border-gray-700 space-y-3">

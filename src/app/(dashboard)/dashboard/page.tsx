@@ -14,6 +14,7 @@ import {
 import Link from "next/link";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import type { Invoice, Product, Customer } from "@/types/database";
+import { DatabaseStatusBanner } from "@/components/layout/DatabaseStatusBanner";
 
 export const metadata: Metadata = {
   title: "Dashboard",
@@ -49,22 +50,30 @@ const quickLinks = [
 export default async function DashboardPage() {
   const supabase = await createClient();
 
-  // Fetch all necessary data concurrently
-  const [
-    { data: invoices },
-    { count: totalCustomers },
-    { data: products },
-    { data: recentInvoices }
-  ] = await Promise.all([
-    supabase.from("invoices").select("*"),
-    supabase.from("customers").select("*", { count: "exact", head: true }),
-    supabase.from("products").select("*"),
-    supabase
-      .from("invoices")
-      .select("*, customer:customers(name)")
-      .order("created_at", { ascending: false })
-      .limit(5)
-  ]);
+  let invoices: Invoice[] | null = null;
+  let totalCustomers: number | null = 0;
+  let products: Product[] | null = null;
+  let recentInvoices: any[] | null = null;
+  let fetchError: string | null = null;
+
+  try {
+    const results = await Promise.all([
+      supabase.from("invoices").select("*"),
+      supabase.from("customers").select("*", { count: "exact", head: true }),
+      supabase.from("products").select("*"),
+      supabase
+        .from("invoices")
+        .select("*, customer:customers(name)")
+        .order("created_at", { ascending: false })
+        .limit(5)
+    ]);
+    invoices = (results[0].data as Invoice[]) || [];
+    totalCustomers = results[1].count;
+    products = (results[2].data as Product[]) || [];
+    recentInvoices = results[3].data || [];
+  } catch (err: any) {
+    fetchError = err?.message || "Failed to fetch database data";
+  }
 
   const now = new Date();
   const startOfToday = new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString();
@@ -164,6 +173,7 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
+      <DatabaseStatusBanner error={fetchError} />
       {/* Page header */}
       <div>
         <h2 className="text-2xl font-bold text-gray-900 dark:text-white">
