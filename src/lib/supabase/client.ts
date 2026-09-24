@@ -5,10 +5,20 @@ function getCredentials() {
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
 
-  const isValidUrl = url && url.startsWith("http");
+  const isValidUrl =
+    url &&
+    url.startsWith("http") &&
+    !url.includes("your_supabase_project_url") &&
+    !url.includes("placeholder");
+
+  const isValidKey =
+    key &&
+    key !== "your_supabase_anon_key" &&
+    key !== "placeholder-key";
+
   return {
     supabaseUrl: isValidUrl ? url : "https://placeholder.supabase.co",
-    supabaseAnonKey: key && key !== "your_supabase_anon_key" ? key : "placeholder-key",
+    supabaseAnonKey: isValidKey ? key : "placeholder-key",
   };
 }
 

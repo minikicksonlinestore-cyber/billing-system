@@ -1,14 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2, AlertCircle } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
-  const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -28,15 +26,31 @@ export default function LoginPage() {
       });
 
       if (authError) {
-        setError(authError.message);
+        if (
+          authError.message.includes("Failed to fetch") ||
+          authError.message.includes("fetch") ||
+          authError.message.includes("placeholder")
+        ) {
+          setError(
+            "Authentication failed: Unable to connect to Supabase. Ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables are configured in your deployment settings."
+          );
+        } else {
+          setError(authError.message);
+        }
+        setIsLoading(false);
         return;
       }
 
-      router.push("/dashboard");
-      router.refresh();
-    } catch {
-      setError("An unexpected error occurred. Please try again.");
-    } finally {
+      // Perform a full window navigation so browser attaches all newly set auth cookies to the HTTP GET request for /dashboard
+      window.location.href = "/dashboard";
+    } catch (err: any) {
+      if (err?.message?.includes("Failed to fetch") || err?.toString()?.includes("fetch")) {
+        setError(
+          "Authentication failed: Unable to connect to Supabase. Ensure NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY environment variables are configured in your deployment settings."
+        );
+      } else {
+        setError("An unexpected error occurred during login. Please try again.");
+      }
       setIsLoading(false);
     }
   };
@@ -57,7 +71,7 @@ export default function LoginPage() {
         {error && (
           <div className="flex items-start gap-3 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
             <AlertCircle className="w-4 h-4 text-red-500 mt-0.5 flex-shrink-0" />
-            <p className="text-sm text-red-700 dark:text-red-400">{error}</p>
+            <p className="text-sm text-red-700 dark:text-red-400 leading-relaxed">{error}</p>
           </div>
         )}
 
@@ -98,12 +112,6 @@ export default function LoginPage() {
             >
               Password
             </label>
-            <Link
-              href="/forgot-password"
-              className="text-xs text-indigo-600 dark:text-indigo-400 hover:underline"
-            >
-              Forgot password?
-            </Link>
           </div>
           <div className="relative">
             <input

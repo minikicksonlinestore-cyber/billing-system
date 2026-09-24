@@ -43,8 +43,14 @@ export default function SignupPage() {
       setTimeout(() => {
         router.push("/login");
       }, 3000);
-    } catch {
-      setError("An unexpected error occurred. Please try again.");
+    } catch (err: any) {
+      if (err?.message?.includes("Failed to fetch") || err?.toString()?.includes("fetch")) {
+        setError(
+          "Connection failed (Failed to fetch). Please update your Supabase project URL & Anon Key in .env.local file."
+        );
+      } else {
+        setError("An unexpected error occurred. Please try again.");
+      }
     } finally {
       setIsLoading(false);
     }
