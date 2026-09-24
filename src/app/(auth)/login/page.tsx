@@ -2,6 +2,7 @@
 
 import { useState } from "react";
 import { Eye, EyeOff, Loader2, AlertCircle, Lock } from "lucide-react";
+import { loginAction } from "@/app/actions/auth";
 import { cn } from "@/lib/utils";
 
 export default function LoginPage() {
@@ -16,27 +17,36 @@ export default function LoginPage() {
     setIsLoading(true);
 
     try {
-      const res = await fetch("/api/auth/login", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ password }),
-      });
+      // Primary: Next.js Server Action
+      const result = await loginAction(password);
 
-      const data = await res.json();
-
-      if (!res.ok || !data.success) {
-        setError(data.error || "Incorrect password. Please try again.");
+      if (!result.success) {
+        setError(result.error || "Incorrect password. Please try again.");
         setIsLoading(false);
         return;
       }
 
-      // Force full window navigation to attach session cookie to GET /dashboard
+      // Successful login -> Redirect to dashboard
       window.location.href = "/dashboard";
     } catch {
-      setError("An unexpected error occurred. Please try again.");
-      setIsLoading(false);
+      // Fallback: API Route Handler
+      try {
+        const res = await fetch("/api/auth/login", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ password }),
+        });
+        const data = await res.json();
+        if (res.ok && data.success) {
+          window.location.href = "/dashboard";
+          return;
+        }
+        setError(data?.error || "Incorrect password. Please try again.");
+      } catch {
+        setError("Unable to complete login request. Please check your network connection.");
+      } finally {
+        setIsLoading(false);
+      }
     }
   };
 
