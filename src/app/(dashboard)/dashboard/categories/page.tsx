@@ -1,12 +1,12 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { db } from '@/lib/db';
 import type { Category } from "@/types/database";
 import { Plus, Pencil, Trash2, Tag, Loader2, AlertCircle } from "lucide-react";
 
 export default function CategoriesPage() {
-  const supabase = createClient();
+  
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -19,7 +19,7 @@ export default function CategoriesPage() {
 
   const fetchCategories = async () => {
     setIsLoading(true);
-    const { data, error } = await supabase
+    const { data, error } = await db
       .from("categories")
       .select("*")
       .order("name");
@@ -61,7 +61,7 @@ export default function CategoriesPage() {
 
     if (editingCategory) {
       // Update
-      const { error } = await (supabase.from("categories") as any)
+      const { error } = await (db.from("categories") as any)
         .update({ name: formData.name, description: formData.description })
         .eq("id", editingCategory.id);
 
@@ -72,7 +72,7 @@ export default function CategoriesPage() {
       }
     } else {
       // Create
-      const { error } = await (supabase.from("categories") as any)
+      const { error } = await (db.from("categories") as any)
         .insert([{ name: formData.name, description: formData.description }]);
 
       if (error) setError(error.message);
@@ -88,7 +88,7 @@ export default function CategoriesPage() {
     if (!window.confirm("Are you sure you want to delete this category?")) return;
     
     // In a real system, you might want to check if products are attached
-    const { error } = await supabase.from("categories").delete().eq("id", id);
+    const { error } = await db.from("categories").delete().eq("id", id);
     if (error) {
       alert("Error deleting category: " + error.message);
     } else {

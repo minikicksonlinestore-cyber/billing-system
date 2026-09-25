@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { db } from '@/lib/db';
 import type { Invoice, InvoiceItem, Product, Customer } from "@/types/database";
 import {
   BarChart3,
@@ -23,7 +23,7 @@ import { cn, formatCurrency, formatDate } from "@/lib/utils";
 type ReportTab = "products" | "customers" | "stock" | "low_stock";
 
 export default function ReportsPage() {
-  const supabase = createClient();
+  
   const [activeTab, setActiveTab] = useState<ReportTab>("products");
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -49,10 +49,10 @@ export default function ReportsPage() {
         { data: prods, error: pErr },
         { data: custs, error: cErr },
       ] = await Promise.all([
-        supabase.from("invoices").select("*").neq("status", "cancelled").order("issue_date", { ascending: false }),
-        supabase.from("invoice_items").select("*, product:products(*)"),
-        supabase.from("products").select("*").order("name"),
-        supabase.from("customers").select("*").order("name"),
+        db.from("invoices").select("*").neq("status", "cancelled").order("issue_date", { ascending: false }),
+        db.from("invoice_items").select("*, product:products(*)"),
+        db.from("products").select("*").order("name"),
+        db.from("customers").select("*").order("name"),
       ]);
 
       if (iErr) throw new Error(iErr.message);

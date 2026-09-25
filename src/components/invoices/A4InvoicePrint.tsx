@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect, useRef } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { db } from '@/lib/db';
 import { X, Printer } from "lucide-react";
 import { formatCurrency, formatDate, cn } from "@/lib/utils";
 import type { Invoice, Customer, InvoiceItem, Product } from "@/types/database";
@@ -37,13 +37,13 @@ export function A4InvoicePrint({
   shopDetails: initialShopDetails,
   onClose,
 }: A4InvoicePrintProps) {
-  const supabase = createClient();
+  
   const printRef = useRef<HTMLDivElement>(null);
   const [shopDetails, setShopDetails] = useState<ShopDetails>(initialShopDetails || DEFAULT_SHOP_DETAILS);
 
   useEffect(() => {
     (async () => {
-      const { data } = await (supabase.from("settings") as any).select("*");
+      const { data } = await (db.from("settings") as any).select("*");
       if (data && data.length > 0) {
         const settingsMap: Record<string, any> = {};
         (data as any[])?.forEach((row) => { settingsMap[row.key] = row.value; });

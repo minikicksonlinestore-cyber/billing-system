@@ -1,4 +1,4 @@
-// Database types matching the Supabase PostgreSQL schema
+// Database types matching the PostgreSQL schema
 
 export type Json =
   | string
@@ -170,7 +170,7 @@ export interface Setting {
 }
 
 // ─────────────────────────────────────────────
-// Database Schema Type (Supabase pattern)
+// Database Schema Type
 // ─────────────────────────────────────────────
 
 export type Database = {

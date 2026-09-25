@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { db } from '@/lib/db';
 import type { Invoice, Customer, InvoiceItem, Product } from "@/types/database";
 import {
   FileText,
@@ -26,7 +26,7 @@ type InvoiceWithDetails = Invoice & {
 };
 
 export default function InvoicesPage() {
-  const supabase = createClient();
+  
 
   // Data states
   const [invoices, setInvoices] = useState<InvoiceWithDetails[]>([]);
@@ -52,8 +52,8 @@ export default function InvoicesPage() {
     try {
       // Fetch invoices and customers
       const [{ data: invs, error: invErr }, { data: custs }] = await Promise.all([
-        supabase.from("invoices").select("*, customer:customers(*)").order("created_at", { ascending: false }),
-        supabase.from("customers").select("*").order("name"),
+        db.from("invoices").select("*, customer:customers(*)").order("created_at", { ascending: false }),
+        db.from("customers").select("*").order("name"),
       ]);
 
       if (invErr) {
@@ -83,7 +83,7 @@ export default function InvoicesPage() {
   // Open A4 Invoice Modal for View / Print / Reprint
   const handleOpenPrintModal = async (invoiceId: string) => {
     setIsFetchingDetail(true);
-    const { data: invData, error: err } = await (supabase.from("invoices") as any)
+    const { data: invData, error: err } = await (db.from("invoices") as any)
       .select("*, customer:customers(*), items:invoice_items(*, product:products(*))")
       .eq("id", invoiceId)
       .single();

@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { db } from '@/lib/db';
 import type { Product, Category } from "@/types/database";
 import { Plus, Pencil, Trash2, Package, Loader2, AlertCircle, Search, Filter } from "lucide-react";
 import Link from "next/link";
 import { cn, formatCurrency } from "@/lib/utils";
 
 export default function ProductsPage() {
-  const supabase = createClient();
+  
   const [products, setProducts] = useState<(Product & { category?: Category })[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -23,11 +23,11 @@ export default function ProductsPage() {
     setError(null);
     
     // Fetch categories for filter dropdown
-    const { data: cats } = await supabase.from("categories").select("*");
+    const { data: cats } = await db.from("categories").select("*");
     if (cats) setCategories(cats);
 
     // Fetch products
-    const { data: prods, error: prodsError } = await supabase
+    const { data: prods, error: prodsError } = await db
       .from("products")
       .select("*, category:categories(*)")
       .order("created_at", { ascending: false });
@@ -35,7 +35,7 @@ export default function ProductsPage() {
     if (prodsError) {
       setError(prodsError.message);
     } else {
-      // Supabase join sometimes returns an array or single object depending on relation
+      // Join sometimes returns an array or single object depending on relation
       // We'll map it to handle both cases smoothly
       // eslint-disable-next-line @typescript-eslint/no-explicit-any
       const mapped = (prods as any[])?.map(p => ({
@@ -56,7 +56,7 @@ export default function ProductsPage() {
   const handleDelete = async (id: string) => {
     if (!window.confirm("Are you sure you want to delete this product?")) return;
     
-    const { error } = await supabase.from("products").delete().eq("id", id);
+    const { error } = await db.from("products").delete().eq("id", id);
     if (error) {
       alert("Error deleting product: " + error.message);
     } else {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { db } from '@/lib/db';
 import type { Payment, Invoice, Customer } from "@/types/database";
 import {
   CreditCard,
@@ -16,7 +16,7 @@ import {
 import { cn, formatCurrency, formatDate } from "@/lib/utils";
 
 export default function PaymentsPage() {
-  const supabase = createClient();
+  
   const [payments, setPayments] = useState<(Payment & { invoice?: Invoice & { customer?: Customer } })[]>([]);
   const [unpaidInvoices, setUnpaidInvoices] = useState<(Invoice & { customer?: Customer })[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -35,13 +35,13 @@ export default function PaymentsPage() {
     setError(null);
 
     // Fetch payments list
-    const { data: pymts, error: pErr } = await supabase
+    const { data: pymts, error: pErr } = await db
       .from("payments")
       .select("*, invoice:invoices(*, customer:customers(*))")
       .order("created_at", { ascending: false });
 
     // Fetch invoices with balance > 0 for recording new payments
-    const { data: invs, error: iErr } = await supabase
+    const { data: invs, error: iErr } = await db
       .from("invoices")
       .select("*, customer:customers(*)")
       .gt("amount_due", 0)
@@ -151,11 +151,11 @@ export default function PaymentsPage() {
     setModalError(null);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await db.auth.getUser();
       if (!user) throw new Error("Not authenticated");
 
       // 1. Insert into payments table
-      const { error: pErr } = await (supabase.from("payments") as any).insert([
+      const { error: pErr } = await (db.from("payments") as any).insert([
         {
           invoice_id: selectedInvoice.id,
           payment_date: new Date().toISOString().split("T")[0],
@@ -170,7 +170,7 @@ export default function PaymentsPage() {
       if (pErr) throw new Error(pErr.message);
 
       // 2. Update invoice amount_paid, amount_due, and status
-      const { error: iErr } = await (supabase.from("invoices") as any)
+      const { error: iErr } = await (db.from("invoices") as any)
         .update({
           amount_paid: newTotalPaid,
           amount_due: newBalanceAmount,

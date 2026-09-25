@@ -2,7 +2,7 @@
 
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { db } from '@/lib/db';
 import type { Customer, Product } from "@/types/database";
 import {
   Search,
@@ -75,7 +75,7 @@ function newLineItem(product?: Product): BillLineItem {
 
 export default function NewInvoicePage() {
   const router = useRouter();
-  const supabase = createClient();
+  
 
   // Data
   const [products, setProducts] = useState<Product[]>([]);
@@ -126,8 +126,8 @@ export default function NewInvoicePage() {
   useEffect(() => {
     (async () => {
       const [{ data: prods }, { data: custs }] = await Promise.all([
-        supabase.from("products").select("*").eq("is_active", true).order("name"),
-        supabase.from("customers").select("*").eq("is_active", true).order("name"),
+        db.from("products").select("*").eq("is_active", true).order("name"),
+        db.from("customers").select("*").eq("is_active", true).order("name"),
       ]);
       setProducts(prods || []);
       setCustomers(custs || []);
@@ -267,11 +267,11 @@ export default function NewInvoicePage() {
     setSuccessMessage(null);
 
     try {
-      const { data: { user } } = await supabase.auth.getUser();
+      const { data: { user } } = await db.auth.getUser();
       if (!user) throw new Error("Authentication error. Please log in again.");
 
       // ── 1. PREVENT DUPLICATE INVOICE CREATION ────────────────────────────
-      const { data: existingInv } = await supabase
+      const { data: existingInv } = await db
         .from("invoices")
         .select("id")
         .eq("invoice_number", invoiceNumber)
@@ -285,7 +285,7 @@ export default function NewInvoicePage() {
       if (finalStatus !== "draft") {
         for (const line of validLines) {
           if (line.product_id) {
-            const { data: prodData, error: prodErr } = await (supabase.from("products") as any)
+            const { data: prodData, error: prodErr } = await (db.from("products") as any)
               .select("id, name, stock_quantity, is_active")
               .eq("id", line.product_id)
               .single();
@@ -311,7 +311,7 @@ export default function NewInvoicePage() {
       // ── 3. CREATE / GET CUSTOMER ─────────────────────────────────────────
       let customerId = customer.id;
       if (!customerId && customer.name.trim()) {
-        const { data: newCust, error: custErr } = await (supabase.from("customers") as any)
+        const { data: newCust, error: custErr } = await (db.from("customers") as any)
           .insert([{
             name: customer.name,
             phone: customer.phone || null,
@@ -340,7 +340,7 @@ export default function NewInvoicePage() {
         total_amount: l.total_amount,
       }));
 
-      const { data: rpcRes, error: rpcErr } = await (supabase as any).rpc("confirm_invoice_transaction", {
+      const { data: rpcRes, error: rpcErr } = await (db as any).rpc("confirm_invoice_transaction", {
         p_invoice_number: invoiceNumber,
         p_customer_id: customerId,
         p_status: finalStatus,
@@ -369,7 +369,7 @@ export default function NewInvoicePage() {
 
       // ── 5. FALLBACK: JS SEQUENTIAL TRANSACTION LOGIC ───────────────────────
       // Insert Invoice Header
-      const { data: invoice, error: invErr } = await (supabase.from("invoices") as any)
+      const { data: invoice, error: invErr } = await (db.from("invoices") as any)
         .insert([{
           invoice_number: invoiceNumber,
           customer_id: customerId,
@@ -404,7 +404,7 @@ export default function NewInvoicePage() {
         total_amount: l.total_amount,
       }));
 
-      const { error: itemsErr } = await (supabase.from("invoice_items") as any)
+      const { error: itemsErr } = await (db.from("invoice_items") as any)
         .insert(formattedItems);
 
       if (itemsErr) throw new Error("Error creating invoice line items: " + itemsErr.message);
@@ -414,7 +414,7 @@ export default function NewInvoicePage() {
         for (const line of validLines) {
           if (line.product_id) {
             // Get current stock before deduction
-            const { data: pData } = await (supabase.from("products") as any)
+            const { data: pData } = await (db.from("products") as any)
               .select("stock_quantity")
               .eq("id", line.product_id)
               .single();
@@ -423,12 +423,12 @@ export default function NewInvoicePage() {
             const newStock = currentStock - line.quantity;
 
             // 10. Deduct sold quantity from stock
-            await (supabase.from("products") as any)
+            await (db.from("products") as any)
               .update({ stock_quantity: newStock })
               .eq("id", line.product_id);
 
             // 11. Create stock movement record
-            await (supabase.from("stock_movements") as any).insert([{
+            await (db.from("stock_movements") as any).insert([{
               product_id: line.product_id,
               movement_type: "sale",
               quantity: -line.quantity,
@@ -445,7 +445,7 @@ export default function NewInvoicePage() {
 
       // 12. Save payment information (if paidAmount > 0)
       if (paidAmount > 0) {
-        await (supabase.from("payments") as any).insert([{
+        await (db.from("payments") as any).insert([{
           invoice_id: invoice.id,
           payment_date: issueDate,
           amount: paidAmount,

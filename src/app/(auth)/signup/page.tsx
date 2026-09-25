@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Eye, EyeOff, Loader2, AlertCircle, CheckCircle } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { db } from '@/lib/db';
 import { cn } from "@/lib/utils";
 
 export default function SignupPage() {
@@ -23,8 +23,8 @@ export default function SignupPage() {
     setIsLoading(true);
 
     try {
-      const supabase = createClient();
-      const { error: authError } = await supabase.auth.signUp({
+      
+      const { error: authError } = await (db.auth as any).signUp({
         email: email.trim(),
         password,
         options: {
@@ -43,14 +43,8 @@ export default function SignupPage() {
       setTimeout(() => {
         router.push("/login");
       }, 3000);
-    } catch (err: any) {
-      if (err?.message?.includes("Failed to fetch") || err?.toString()?.includes("fetch")) {
-        setError(
-          "Connection failed (Failed to fetch). Please update your Supabase project URL & Anon Key in .env.local file."
-        );
-      } else {
-        setError("An unexpected error occurred. Please try again.");
-      }
+    } catch {
+      setError("An unexpected error occurred. Please try again.");
     } finally {
       setIsLoading(false);
     }

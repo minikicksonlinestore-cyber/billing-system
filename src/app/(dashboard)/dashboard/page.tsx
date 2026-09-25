@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { createClient } from "@/lib/supabase/server";
+import { db } from '@/lib/db';
 import {
   FileText,
   Users,
@@ -48,7 +48,7 @@ const quickLinks = [
 ];
 
 export default async function DashboardPage() {
-  const supabase = await createClient();
+  
 
   let invoices: Invoice[] | null = null;
   let totalCustomers: number | null = 0;
@@ -58,10 +58,10 @@ export default async function DashboardPage() {
 
   try {
     const results = await Promise.all([
-      supabase.from("invoices").select("*"),
-      supabase.from("customers").select("*", { count: "exact", head: true }),
-      supabase.from("products").select("*"),
-      supabase
+      db.from("invoices").select("*"),
+      db.from("customers").select("*", { count: "exact", head: true }),
+      db.from("products").select("*"),
+      db
         .from("invoices")
         .select("*, customer:customers(name)")
         .order("created_at", { ascending: false })

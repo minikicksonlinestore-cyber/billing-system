@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { createClient } from "@/lib/supabase/client";
+import { db } from '@/lib/db';
 import type { Category, Product } from "@/types/database";
 import { Loader2, ArrowLeft, Save, AlertCircle } from "lucide-react";
 import Link from "next/link";
@@ -13,7 +13,7 @@ interface ProductFormProps {
 
 export function ProductForm({ initialData }: ProductFormProps) {
   const router = useRouter();
-  const supabase = createClient();
+  
   const [categories, setCategories] = useState<Category[]>([]);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -33,7 +33,7 @@ export function ProductForm({ initialData }: ProductFormProps) {
   });
 
   useEffect(() => {
-    supabase.from("categories").select("*").order("name").then(({ data }) => {
+    db.from("categories").select("*").order("name").then(({ data }: any) => {
       if (data) setCategories(data);
     });
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -60,12 +60,12 @@ export function ProductForm({ initialData }: ProductFormProps) {
 
     let apiError;
     if (initialData) {
-      const { error: updateError } = await (supabase.from("products") as any)
+      const { error: updateError } = await (db.from("products") as any)
         .update(payload)
         .eq("id", initialData.id);
       apiError = updateError;
     } else {
-      const { error: insertError } = await (supabase.from("products") as any)
+      const { error: insertError } = await (db.from("products") as any)
         .insert([payload]);
       apiError = insertError;
     }

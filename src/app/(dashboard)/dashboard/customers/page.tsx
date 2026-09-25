@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { db } from '@/lib/db';
 import type { Customer, Invoice } from "@/types/database";
 import {
   Users,
@@ -24,7 +24,7 @@ interface CustomerWithTotals extends Customer {
 }
 
 export default function CustomersPage() {
-  const supabase = createClient();
+  
   const [customers, setCustomers] = useState<CustomerWithTotals[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -52,8 +52,8 @@ export default function CustomersPage() {
 
     // Fetch customers and invoices for total aggregation
     const [{ data: custData, error: custErr }, { data: invData }] = await Promise.all([
-      supabase.from("customers").select("*").order("name"),
-      supabase.from("invoices").select("customer_id, total_amount, amount_paid, amount_due, status"),
+      db.from("customers").select("*").order("name"),
+      db.from("invoices").select("customer_id, total_amount, amount_paid, amount_due, status"),
     ]);
 
     if (custErr) {
@@ -134,7 +134,7 @@ export default function CustomersPage() {
     };
 
     if (editingCustomer) {
-      const { error: updateErr } = await (supabase.from("customers") as any)
+      const { error: updateErr } = await (db.from("customers") as any)
         .update(payload)
         .eq("id", editingCustomer.id);
 
@@ -146,7 +146,7 @@ export default function CustomersPage() {
         await fetchCustomers();
       }
     } else {
-      const { error: insertErr } = await (supabase.from("customers") as any).insert([payload]);
+      const { error: insertErr } = await (db.from("customers") as any).insert([payload]);
 
       if (insertErr) {
         setModalError(insertErr.message);
@@ -163,7 +163,7 @@ export default function CustomersPage() {
   const handleDelete = async (id: string, name: string) => {
     if (!window.confirm(`Are you sure you want to delete customer "${name}"?`)) return;
 
-    const { error: delErr } = await supabase.from("customers").delete().eq("id", id);
+    const { error: delErr } = await db.from("customers").delete().eq("id", id);
     if (delErr) {
       alert("Error deleting customer: " + delErr.message);
     } else {

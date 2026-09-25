@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { db } from '@/lib/db';
 import type { Product, StockMovement, Category, UserProfile } from "@/types/database";
 import {
   Package,
@@ -20,7 +20,7 @@ import { cn, formatDate } from "@/lib/utils";
 type Tab = "overview" | "movements";
 
 export default function StockPage() {
-  const supabase = createClient();
+  
   const [activeTab, setActiveTab] = useState<Tab>("overview");
   
   // Data states
@@ -46,7 +46,7 @@ export default function StockPage() {
     setError(null);
 
     if (activeTab === "overview") {
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError } = await db
         .from("products")
         .select("*, category:categories(*)")
         .order("name");
@@ -61,7 +61,7 @@ export default function StockPage() {
         setProducts(mapped);
       }
     } else {
-      const { data, error: fetchError } = await supabase
+      const { data, error: fetchError } = await db
         .from("stock_movements")
         .select("*, product:products(*), user:user_profiles(*)")
         .order("created_at", { ascending: false })
@@ -107,7 +107,7 @@ export default function StockPage() {
     setError(null);
 
     // Get current auth user
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await db.auth.getUser();
     if (!user) {
       setError("Authentication error. Please log in again.");
       setIsSaving(false);
@@ -134,7 +134,7 @@ export default function StockPage() {
     const newStock = currentStock + quantityChange;
 
     // We use the two-step JS call for maximum compatibility if RPC is not created yet
-    const { error: updateError } = await (supabase.from("products") as any)
+    const { error: updateError } = await (db.from("products") as any)
       .update({ stock_quantity: newStock })
       .eq("id", selectedProduct.id);
 
@@ -144,7 +144,7 @@ export default function StockPage() {
       return;
     }
 
-    const { error: movementError } = await (supabase.from("stock_movements") as any)
+    const { error: movementError } = await (db.from("stock_movements") as any)
       .insert([{
         product_id: selectedProduct.id,
         movement_type: movementType,
@@ -157,7 +157,7 @@ export default function StockPage() {
 
     if (movementError) {
       // Revert stock (best effort)
-      await (supabase.from("products") as any).update({ stock_quantity: currentStock }).eq("id", selectedProduct.id);
+      await (db.from("products") as any).update({ stock_quantity: currentStock }).eq("id", selectedProduct.id);
       setError("Error recording movement: " + movementError.message);
     } else {
       setIsModalOpen(false);

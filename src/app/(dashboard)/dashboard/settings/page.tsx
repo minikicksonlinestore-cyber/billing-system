@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { createClient } from "@/lib/supabase/client";
+import { db } from '@/lib/db';
 import {
   Settings,
   Store,
@@ -19,7 +19,7 @@ import {
 } from "lucide-react";
 
 export default function SettingsPage() {
-  const supabase = createClient();
+  
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -44,7 +44,7 @@ export default function SettingsPage() {
     setIsLoading(true);
     setError(null);
 
-    const { data, error } = await (supabase.from("settings") as any).select("*");
+    const { data, error } = await (db.from("settings") as any).select("*");
 
     if (error) {
       setError(error.message);
@@ -92,7 +92,7 @@ export default function SettingsPage() {
         is_public: true,
       }));
 
-      const { error: upsertErr } = await (supabase.from("settings") as any).upsert(payload, {
+      const { error: upsertErr } = await (db.from("settings") as any).upsert(payload, {
         onConflict: "key",
       });
 

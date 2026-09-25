@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { Menu, Bell, User, LogOut, ChevronDown } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { db } from '@/lib/db';
 import { cn, getInitials } from "@/lib/utils";
 import type { UserProfile } from "@/types/database";
 
@@ -19,36 +19,16 @@ export function Header({ onMobileMenuToggle, title = "Dashboard" }: HeaderProps)
   const [isLoggingOut, setIsLoggingOut] = useState(false);
 
   useEffect(() => {
-    const supabase = createClient();
-
-    // Fetch the current auth user
-    supabase.auth.getUser().then(({ data: { user: authUser } }) => {
-      if (authUser) {
-        // Attempt to fetch the user profile from user_profiles table
-        supabase
-          .from("user_profiles")
-          .select("*")
-          .eq("id", authUser.id)
-          .single()
-          .then(({ data }) => {
-            if (data) {
-              setUser(data as UserProfile);
-            } else {
-              // Fallback: use auth metadata
-              setUser({
-                id: authUser.id,
-                email: authUser.email ?? "",
-                full_name: authUser.user_metadata?.full_name ?? null,
-                role: "staff",
-                phone: null,
-                avatar_url: null,
-                is_active: true,
-                created_at: authUser.created_at,
-                updated_at: authUser.updated_at ?? authUser.created_at,
-              });
-            }
-          });
-      }
+    setUser({
+      id: "mock-user-id",
+      email: "user@example.com",
+      full_name: "Admin User",
+      role: "admin",
+      phone: null,
+      avatar_url: null,
+      is_active: true,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
     });
   }, []);
 
